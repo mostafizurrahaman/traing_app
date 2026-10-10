@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules
+.vercel 
+logs/
+dist/
+entrypoint.sh
+yarn.lock
+src/app/modules/push-notification/firebase.config.update.json
+uploads/
