@@ -9,3 +9,9 @@ entrypoint.sh
 yarn.lock
 src/app/modules/push-notification/firebase.config.update.json
 
+# uploads - keep products, profile, and reports; ignore others
+# uploads/video/
+# uploads/images/banner/
+# uploads/images/image/
+# uploads/images/message/
+# uploads/images/catagorys/
