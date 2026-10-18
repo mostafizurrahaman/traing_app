@@ -47,7 +47,7 @@ const insertIntoDB = async (
     title: payload.title,
   });
 
-  if (!duplicateProduct) {
+  if (duplicateProduct) {
     throw new ApiError(httpStatus.CONFLICT, 'Duplicate product not allowed.');
   }
 
