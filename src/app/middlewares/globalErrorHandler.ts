@@ -14,6 +14,7 @@ import { handleCastError } from '../../errors/handleCastError';
 import ApiError from '../../errors/ApiError';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import AppError from '../../errors/AppError';
+import { MulterError } from 'multer';
 
 const globalErrorHandler: ErrorRequestHandler = (
   error,
@@ -62,6 +63,55 @@ const globalErrorHandler: ErrorRequestHandler = (
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorMessages = simplifiedError.errorMessages;
+  } else if (error instanceof MulterError) {
+    statusCode = 400;
+
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      message = `Too many files uploaded for field: ${error.field}`;
+
+      errorMessages = [
+        {
+          path: error?.field as string,
+          message,
+        },
+      ];
+    } else if (error.code === 'LIMIT_FILE_SIZE') {
+      message = 'File size limit exceeded';
+
+      errorMessages = [
+        {
+          path: error.field || '',
+          message,
+        },
+      ];
+    } else if (error.code === 'LIMIT_FILE_COUNT') {
+      message = 'Maximum number of files exceeded';
+
+      errorMessages = [
+        {
+          path: '',
+          message,
+        },
+      ];
+    } else if (error.code === 'LIMIT_FIELD_COUNT') {
+      message = 'Too many text fields submitted';
+
+      errorMessages = [
+        {
+          path: '',
+          message,
+        },
+      ];
+    } else {
+      message = error.message;
+
+      errorMessages = [
+        {
+          path: error.field || '',
+          message,
+        },
+      ];
+    }
   } else if (error instanceof ApiError) {
     statusCode = error?.statusCode;
     message = error.message;

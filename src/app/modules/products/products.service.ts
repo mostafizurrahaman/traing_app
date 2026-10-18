@@ -15,10 +15,13 @@ import { Types } from 'mongoose';
 import { sendPushNotification } from '../push-notification/push.notifications';
 import { Subscription } from '../subscriptions/subscriptions.model';
 import { ISubscriptions } from '../subscriptions/subscriptions.interface';
+import httpStatus from 'http-status';
 
-
-
-const insertIntoDB = async (files: any, payload: IProducts, user: JwtPayload) => {
+const insertIntoDB = async (
+  files: any,
+  payload: IProducts,
+  user: JwtPayload,
+) => {
   if (!files?.product_img) {
     throw new ApiError(400, 'File is missing');
   }
@@ -39,8 +42,19 @@ const insertIntoDB = async (files: any, payload: IProducts, user: JwtPayload) =>
     throw new ApiError(400, 'User not found');
   }
 
+  // Check duplicate product :
+  const duplicateProduct = await Product.exists({
+    title: payload.title,
+  });
+
+  if (!duplicateProduct) {
+    throw new ApiError(httpStatus.CONFLICT, 'Duplicate product not allowed.');
+  }
+
   if (files?.product_img) {
-    payload.images = files.product_img.map((file: any) => `/images/products/${file.filename}`);
+    payload.images = files.product_img.map(
+      (file: any) => `/images/products/${file.filename}`,
+    );
   }
 
   payload.user = user.userId;
@@ -61,7 +75,10 @@ const insertIntoDB = async (files: any, payload: IProducts, user: JwtPayload) =>
       title: notificationMessage,
       body: 'View for more details.',
     };
-    await sendPushNotification({ fcmToken: dbReceiver.deviceToken, payload: pushPayload });
+    await sendPushNotification({
+      fcmToken: dbReceiver.deviceToken,
+      payload: pushPayload,
+    });
   }
 
   // Emit socket notification
@@ -109,7 +126,7 @@ const products = async (query: Record<string, unknown>) => {
 };
 
 const myProducts = async (user: JwtPayload, query: Record<string, unknown>) => {
-  query.status = ['completed', "pending"]
+  query.status = ['completed', 'pending'];
   const categoryQuery = new QueryBuilder(
     Product.find({ user: user.userId })
       .populate('category')
@@ -136,7 +153,7 @@ const updateProduct = async (req: Request) => {
   const id = req.params.id;
   const productImage: string[] = [];
 
-  console.log("Updated product:", files?.product_img);
+  console.log('Updated product:', files?.product_img);
 
   if (files && files?.product_img && files?.product_img.length) {
     for (const image of files.product_img) {
@@ -158,7 +175,7 @@ const updateProduct = async (req: Request) => {
     const result = await Product.findOneAndUpdate(
       { _id: id },
       { ...updateData },
-      { new: true }
+      { new: true },
     );
     if (!result) {
       throw new ApiError(500, 'Update failed, no product returned!');
@@ -194,11 +211,11 @@ const singleProduct = async (req: Request) => {
       select: 'name',
     },
     {
-      path: "user",
-    }
+      path: 'user',
+    },
   ]);
 
-  const user = await (User.findById(result?.user._id)) as IUser
+  const user = (await User.findById(result?.user._id)) as IUser;
 
   if (!user) {
     throw new ApiError(404, 'User not found!');
@@ -207,7 +224,7 @@ const singleProduct = async (req: Request) => {
   const similarProduct = await Product.find({
     subCategory: result?.subCategory,
   });
-  const point = await makeProductPoints(result, user.userType)
+  const point = await makeProductPoints(result, user.userType);
 
   const rattingDB: any = await Ratting.aggregate([
     { $match: { swapOwner: new Types.ObjectId(result?.user._id) } },
@@ -254,11 +271,16 @@ const productJustForYou = async (req: Request) => {
   const user = (await User.findById(userId)) as IUser;
   const userType = user?.userType;
 
-  const subscription = await Subscription.findOne({ planName: userType }) as ISubscriptions
-  const productPriceLimit = subscription.productPriceLimit
+  const subscription = (await Subscription.findOne({
+    planName: userType,
+  })) as ISubscriptions;
+  const productPriceLimit = subscription.productPriceLimit;
 
   if (!productPriceLimit) {
-    throw new ApiError(400, 'Your plan does not allow you to access this feature. Please try later.');
+    throw new ApiError(
+      400,
+      'Your plan does not allow you to access this feature. Please try later.',
+    );
   }
 
   const products = await Product.find({
@@ -275,11 +297,11 @@ const productJustForYou = async (req: Request) => {
 //   const { userId } = req.user as JwtPayload;
 //   const {fromProduct, toProduct}= req.query;
 //   if(!fromProduct || !toProduct){
-//     throw new ApiError(400, 'Missing product id');   
-//   } 
+//     throw new ApiError(400, 'Missing product id');
+//   }
 //   const user = (await User.findById(userId)) as IUser;
-//   const points = await makeSwapPoints({fromProduct, toProduct}, user.userType); 
-//   return points;  
+//   const points = await makeSwapPoints({fromProduct, toProduct}, user.userType);
+//   return points;
 // }
 
 export const ProductService = {
