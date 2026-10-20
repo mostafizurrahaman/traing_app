@@ -54,7 +54,7 @@ const insertIntoDB = async (
   if (files?.product_img) {
     payload.images = files.product_img.map(
       (file: any) => `/images/products/${file.filename}`,
-    );
+    );    
   }
 
   payload.user = user.userId;
